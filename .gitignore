@@ -222,3 +222,14 @@ __marimo__/
 
 # Local uploads (never commit private Performance files)
 /storage/
+
+# Private tunnel configuration, credentials and temporary files
+/profiles/
+*.key
+*.pem
+/credentials*
+/tokens*
+/tunnel-client/
+*.tmp
+*.temp
+/tmp*/

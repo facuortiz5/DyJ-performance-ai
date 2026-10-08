@@ -165,6 +165,9 @@ class ReadOnlyTest(unittest.TestCase):
         async def exercise(mode="auto"):
             parameters = StdioServerParameters(command=sys.executable, args=["-c", "from pathlib import Path; import mcp_server as s; s.STORAGE_DIR=Path(" + repr(str(self.storage)) + "); s.mcp.run(transport='stdio')"], cwd=Path(__file__).parent)
             async with Client(parameters, read_timeout_seconds=15, mode=mode) as client:
+                skill = server.VISUAL_SKILL_PATH.read_text(encoding="utf-8")
+                self.assertTrue(skill.strip())
+                self.assertEqual(client.instructions, server.BASE_INSTRUCTIONS + "\n\n" + skill)
                 tools = (await client.list_tools()).tools
                 self.assertEqual({tool.name for tool in tools}, {"list_files", "get_file_metadata", "read_performance_data"})
                 self.assertTrue(all(tool.annotations.read_only_hint for tool in tools))
@@ -191,6 +194,7 @@ class ReadOnlyTest(unittest.TestCase):
         async def exercise():
             parameters = StdioServerParameters(command=sys.executable, args=[str(Path(server.__file__).resolve())], cwd=self.root)
             async with Client(parameters, read_timeout_seconds=15, mode="legacy") as client:
+                self.assertEqual(client.instructions, server.mcp.instructions)
                 self.assertEqual(len((await client.list_tools()).tools), 3)
         async def timed():
             await asyncio.wait_for(exercise(), timeout=30)
