@@ -1,6 +1,6 @@
 # Mantenimiento de Defensa Performance AI
 
-Guía técnica para el servidor MCP, la Visual Skill y Secure MCP Tunnel.
+Guía técnica para el servidor MCP, las skills de contexto y visual y Secure MCP Tunnel.
 El README público se conserva sin cambios. Las rutas de la guía manual
 corresponden al equipo de la demo; no se incluyen credenciales ni el perfil privado.
 
@@ -239,8 +239,8 @@ No hace falta desconectar, reinstalar ni recrear el plugin para actualizar sus
 herramientas e instrucciones. Conservar el Tunnel ID, perfil y credenciales.
 No usar **Delete app**, **Delete plugin** ni **Uninstall** para este procedimiento.
 
-Si falta el archivo o no se puede leer como UTF-8, el servidor registra una
-advertencia por stderr y conserva las instrucciones base. Restaurar el archivo,
+Si falta una skill o no se puede leer como UTF-8, el servidor registra una
+advertencia por stderr y conserva las instrucciones base y las otras skills disponibles. Restaurar el archivo,
 volver a iniciar MCP y ejecutar **Refresh tools**.
 
 ### Evidencia de la actualización del 08/10/2026
@@ -335,7 +335,7 @@ No usar `init`, `runtimes create` ni recrear el plugin para actualizar la skill.
 ### Verificación y fuentes
 
 `test_mcp.py` comprueba que un cliente real por `stdio` recibe exactamente las
-instrucciones base y el archivo completo, tanto en modo automático como en el
+instrucciones base y ambas skills completas, tanto en modo automático como en el
 handshake `initialize` de modo legacy. También verifica el arranque desde otro
 directorio de trabajo. Las pruebas existentes conservan sus comprobaciones de
 las tres herramientas, CSV/XLSX, errores y ausencia de escritura sobre datos.
@@ -349,3 +349,41 @@ las tres herramientas, CSV/XLSX, errores y ausencia de escritura sobre datos.
 - [Actualizar herramientas, descripciones e instrucciones en ChatGPT](https://developers.openai.com/api/docs/guides/custom-mcp-server).
 
 - [Refresh de conexiones personalizadas y versiones de plugins publicados](https://developers.openai.com/plugins/deploy/connect-chatgpt).
+
+## Fase 4: comunicación contextualizada y presentación clara
+
+El servidor carga al arrancar, en orden, las instrucciones base,
+`skills/performance-context/SKILL.md` y `skills/performance-visualization/SKILL.md`.
+Ambos archivos se incorporan íntegros a MCP `instructions`; no requieren
+instalación ni invocación manual por parte del usuario final.
+
+La Context Skill define cómo responder: primero lo preguntado, con extensión
+proporcional y contexto integrado, sin glosarios automáticos ni significados
+inventados. La Visual Skill conserva los criterios de evidencia y análisis de
+la Fase 3 y define gráficos autosuficientes, etiquetas de tarjetas y encabezados
+de tablas descriptivos. La claridad prevalece sobre la estética; una respuesta
+textual breve es suficiente cuando explica mejor el resultado. Los encabezados
+originales y los datos de los archivos permanecen intactos.
+
+Para actualizar ChatGPT, seguir el procedimiento anterior de reinicio del
+proceso MCP y **Refresh tools**, y abrir un chat nuevo. Esta implementación no
+reinicia el túnel ni cambia su configuración. La evidencia de hash y tamaño del
+08/10/2026 documentada arriba corresponde a la Fase 3, anterior a estos cambios.
+
+Verificación acotada de esta fase:
+
+```powershell
+& .\.venv\Scripts\python.exe -m unittest test_mcp.ReadOnlyTest.test_skill_communication_and_visual_requirements test_mcp.ReadOnlyTest.test_missing_or_invalid_skill_preserves_other_instructions test_mcp.ReadOnlyTest.test_mcp_stdio_all_tools_and_no_writes test_mcp.ReadOnlyTest.test_stdio_script_entrypoint -v
+```
+
+Las pruebas comprueban integración exacta de ambas skills, reglas de comunicación
+y presentación, conservación de los criterios visuales esenciales y las tres
+herramientas por MCP sin escribir datos. Verifican además que una skill ausente
+o ilegible no impida cargar la otra. No garantizan la calidad de todas las
+respuestas del modelo ni prueban la actualización remota de ChatGPT.
+
+Para revisión manual con el demo, pedir primero un dato puntual de un jugador
+y luego comparar jugadores o eventos. Comprobar brevedad, período, unidad y
+referencia respaldados por `Diccionario`, y títulos/ejes/series comprensibles si
+se genera un gráfico. Si una definición no está disponible, la respuesta debe
+reconocerlo en lugar de asumirla. Las capacidades visuales dependen de la sesión.

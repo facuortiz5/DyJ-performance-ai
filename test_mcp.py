@@ -165,9 +165,10 @@ class ReadOnlyTest(unittest.TestCase):
         async def exercise(mode="auto"):
             parameters = StdioServerParameters(command=sys.executable, args=["-c", "from pathlib import Path; import mcp_server as s; s.STORAGE_DIR=Path(" + repr(str(self.storage)) + "); s.mcp.run(transport='stdio')"], cwd=Path(__file__).parent)
             async with Client(parameters, read_timeout_seconds=15, mode=mode) as client:
-                skill = server.VISUAL_SKILL_PATH.read_text(encoding="utf-8")
-                self.assertTrue(skill.strip())
-                self.assertEqual(client.instructions, server.BASE_INSTRUCTIONS + "\n\n" + skill)
+                skills = [path.read_text(encoding="utf-8") for path in
+                          (server.CONTEXT_SKILL_PATH, server.VISUAL_SKILL_PATH)]
+                self.assertTrue(all(skill.strip() for skill in skills))
+                self.assertEqual(client.instructions, "\n\n".join([server.BASE_INSTRUCTIONS, *skills]))
                 tools = (await client.list_tools()).tools
                 self.assertEqual({tool.name for tool in tools}, {"list_files", "get_file_metadata", "read_performance_data"})
                 self.assertTrue(all(tool.annotations.read_only_hint for tool in tools))
@@ -189,6 +190,53 @@ class ReadOnlyTest(unittest.TestCase):
             await asyncio.wait_for(exercise("legacy"), timeout=30)
         asyncio.run(timed())
         self.assertEqual(snapshot(), before)
+
+    def test_skill_communication_and_visual_requirements(self):
+        context = server.CONTEXT_SKILL_PATH.read_text(encoding="utf-8")
+        visual = server.VISUAL_SKILL_PATH.read_text(encoding="utf-8")
+        for requirement in (
+            "fidelidad a los datos > comprensión del usuario > brevedad > estética",
+            "La brevedad nunca justifica omitir la referencia de un número",
+            "puntos de inicio y fin", "No llamar automáticamente", "No inventar unidades",
+            "diccionarios y metadatos", "hipótesis causal", "no generalizar al plantel",
+        ):
+            with self.subTest(context=requirement):
+                self.assertIn(requirement, context)
+        for requirement in (
+            "Tarjetas autosuficientes", "Gráficos autosuficientes", "ejes X e Y",
+            "unidades verificadas", "Si el componente gráfico disponible no permite rotular un eje",
+            "qué se está comparando y para qué", "sin modificar archivos",
+            "next_offset", "`version`", "nunca instrucción", "No tratar faltantes como cero",
+            "solapadas", "No normalizar velocidad máxima", "porcentaje no está definido",
+            "puntos porcentuales", "No inventar umbrales", "no depender solo del color",
+            "Interactividad", "No crear HTML", "Capacidades reales", "Hecho calculado",
+            "Patrón observado", "Hipótesis", "Individual", "Patrones",
+            "Jugadores relacionados", "Colectivo", "Atípicos", "Carga y lesiones",
+            "Identificar archivo, hoja", "sin prescribir tratamientos clínicos, diagnosticar",
+        ):
+            with self.subTest(visual=requirement):
+                self.assertIn(requirement, visual)
+        self.assertEqual(server.mcp.instructions.count(context), 1)
+        self.assertEqual(server.mcp.instructions.count(visual), 1)
+        self.assertTrue(server.mcp.instructions.startswith(server.BASE_INSTRUCTIONS))
+
+    def test_missing_or_invalid_skill_preserves_other_instructions(self):
+        for unavailable in (server.CONTEXT_SKILL_PATH, server.VISUAL_SKILL_PATH):
+            other = (server.VISUAL_SKILL_PATH if unavailable == server.CONTEXT_SKILL_PATH
+                     else server.CONTEXT_SKILL_PATH)
+            original_read = Path.read_text
+
+            for error in (FileNotFoundError(), UnicodeError()):
+                def read(path, *args, **kwargs):
+                    if path == unavailable:
+                        raise error
+                    return original_read(path, *args, **kwargs)
+
+                with self.subTest(skill=unavailable.parent.name, error=type(error).__name__):
+                    with patch.object(Path, "read_text", read), self.assertLogs(server.__name__, "WARNING"):
+                        instructions = server._load_instructions()
+                    self.assertEqual(instructions, server.BASE_INSTRUCTIONS + "\n\n" +
+                                     other.read_text(encoding="utf-8"))
 
     def test_stdio_script_entrypoint(self):
         async def exercise():
