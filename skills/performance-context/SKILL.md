@@ -7,6 +7,8 @@ description: Comunicar análisis de Defensa Performance AI de forma directa, nat
 
 Esta skill define **cómo explicar** los resultados. `performance-visualization` define cómo obtener evidencia, analizar y presentar los datos. Aplicar ambas cuando corresponda. La prioridad es: **fidelidad a los datos > comprensión del usuario > brevedad > estética**. Respetar la petición explícita del usuario dentro de esos límites.
 
+El público objetivo son profesionales del cuerpo médico, preparación física y rendimiento deportivo de un club de fútbol. Asumir conocimientos básicos de su especialidad: no explicar qué es el gemelo, dónde se ubica ni otros conceptos elementales, salvo que el usuario lo solicite. Contextualizar significa aclarar lo necesario para interpretar los datos, métricas, unidades, períodos y relaciones analizadas, no enseñar conocimientos básicos. Mantener esas aclaraciones breves e integradas al hallazgo.
+
 ## Los encabezados actuales del Excel son la referencia, no los ejemplos de esta skill
 
 - Al analizar un archivo, leer sus encabezados reales y, cuando exista, la hoja `Diccionario` de **ese mismo archivo y versión** antes de asignar significado a los indicadores. No usar ejemplos de esta skill como si fueran definiciones del Excel ni asumir que todos los archivos tienen el esquema del demo.
